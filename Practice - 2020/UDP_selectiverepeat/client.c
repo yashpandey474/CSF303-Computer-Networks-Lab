@@ -1,11 +1,5 @@
 #include "packet.h"
 
-void die(char *s)
-{
-    perror(s);
-    exit(1);
-}
-
 int currbyte = 0;
 int currseq = 0;
 int lastseq = 0;
@@ -129,6 +123,8 @@ int main(){
         die("fopen()");
     }
 
+    printf("FILE OPENED");
+
     //TAKE INPUT TO BUFFER
     // inputintobuffer();
 
@@ -139,6 +135,7 @@ int main(){
 
     while (!feof(fp) || base < currseq)
     {
+        printf("IN LOOP");
         // Send new packets if window is not full
         while (currseq < base + WINDOW_SIZE && !feof(fp))
         {
@@ -151,7 +148,7 @@ int main(){
             packet.size = fread(packet.payload, 1, PACKET_SIZE, fp);
 
             //INCREMENT NEXT_SEQ_NUM
-            currseq = (currseq + 1) % WINDOW_SIZE;
+            currseq++;
             // currbyte += PACKET_SIZE;
 
             // CHECK IF FINAL PACKET
@@ -178,8 +175,10 @@ int main(){
                 }
             }
 
+            printf("SENT PACKET");
+
             // STORE PACKET FOR TIMEOUT
-            sent_packets[currseq] = packet;
+            sent_packets[currseq % WINDOW_SIZE] = packet;
 
         }
 
@@ -245,7 +244,7 @@ int main(){
             //CHECK BOTH SOCKETS
             for (int i = 0; i < 2; i ++){
                 //CHECK IF SOCKET IS READY
-                if (FD_ISSET(s[i], &read_fds && i == 1)){
+                if (FD_ISSET(s[i], &read_fds) && i == 1){
                     int n = recvfrom(s[i], &ack_packet, sizeof(ack_packet), 0, (struct sockaddr *)&si_r2, &slen2);
 
                     // Mark packet as acknowledged

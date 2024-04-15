@@ -55,26 +55,16 @@ int main()
                 ack_pkt.seq_no = rcv_pkt.seq_no;
                 if (rcv_pkt.seq_no == state)
                 {
-                    if (sendto(s, &ack_pkt, sizeof(ack_pkt), 0, (struct sockaddr *)&si_other,
-                               slen) == -1)
-                    {
-                        die("sendto()");
-                    }
+                    
                     // printf("ACK %d SENT\n", ack_pkt.seq_no);
                     state = (state + 1) % 2;
                     
                 }
 
-                else
+                if (sendto(s, &ack_pkt, sizeof(ack_pkt), 0, (struct sockaddr *)&si_other,
+                           slen) == -1)
                 {
-                    // RETRANSMIT OLD ACK
-                    if (sendto(s, &ack_pkt, sizeof(ack_pkt), 0, (struct sockaddr *)&si_other,
-                               slen) == -1)
-                    {
-                        die("sendto()");
-                    }
-
-                    // printf("RETRANSMITTED ACK %d\n", ack_pkt.seq_no);
+                    die("sendto()");
                 }
                 printf("SENT ACK: for PKT with Seq.No. %d\n", rcv_pkt.seq_no);
                 break;

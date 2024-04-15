@@ -10,13 +10,14 @@
 
 #define BUFFER_SIZE 1000
 #define PACKET_SIZE 100
-#define SERVER_PORT 5001
+#define SERVER_PORT_R1 5001
+#define SERVER_PORT_R2 5002
 #define R1_PORT 5001
-#define R2_PORT 5001
+#define R2_PORT 5002
 #define PDR 0.1
 #define WINDOW_SIZE BUFFER_SIZE/PACKET_SIZE
 #define RETRANSMISSION_TIME 2
-
+#define MAX_SEQ_NO 1000
 /*
 The size (number of bytes) of the payload
 b. Whether the packet is the last packet or not?
@@ -51,4 +52,11 @@ int dropPacket()
     }
 
     return 0;
+}
+
+void randomDelay(){
+    struct timespec delay;
+    delay.tv_sec = 0;
+    delay.tv_nsec = rand() % 2000000;
+    nanosleep(&delay, NULL);
 }
