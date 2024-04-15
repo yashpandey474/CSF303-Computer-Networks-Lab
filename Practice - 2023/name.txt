@@ -1,1 +1,6 @@
+<<<<<<< HEAD
 yash,yash1,yash2,yash3,yash4, yash5
+=======
+yash,yash1,yash2,yash3
+yash4,yash5.
+>>>>>>> aed9db2 (Initial practice commit)
