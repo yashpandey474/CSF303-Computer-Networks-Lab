@@ -33,3 +33,22 @@ typedef struct{
     char payload[PACKET_SIZE + 1];
     int size;
 } PACKET;
+
+
+void die(char *s)
+{
+    perror(s);
+    exit(1);
+}
+
+int dropPacket()
+{
+    double random_num = (double) rand() / RAND_MAX;
+
+    //DROP PACKETS WITH PROBABILTY PDR
+    if (random_num < PDR){
+        return 1;
+    }
+
+    return 0;
+}
