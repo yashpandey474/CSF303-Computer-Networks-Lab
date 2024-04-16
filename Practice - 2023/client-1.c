@@ -107,6 +107,7 @@ int main()
 
 #define PORT 5002
 #define MAX_DATA_SIZE 256
+#define TIMEOUT_SEC 5
 
 typedef struct
 {
@@ -122,22 +123,99 @@ void die(char *s)
     exit(1);
 }
 
+// FUNCTION FOR CHECKING SOCKET WITH TIMEOUT
+int is_ready(int sockfd)
+{
+    fd_set rfds;
+    struct timeval tv;
+
+    FD_ZERO(&rfds);
+    FD_SET(sockfd, &rfds);
+
+    tv.tv_sec = TIMEOUT_SEC;
+    tv.tv_usec = 0;
+
+    return select(sockfd + 1, &rfds, NULL, NULL, &tv);
+}
+
+void read_packet(FILE *fp, PACKET *pkt)
+{
+    char value_str[MAX_DATA_SIZE];
+    if (fscanf(fp, "%[^,]", value_str) != EOF)
+    {
+        // Convert string to integer value
+        strncpy(pkt->data, value_str, MAX_DATA_SIZE);
+        pkt->len = strlen(value_str);
+        pkt->seq_no = 0;
+    }
+    else
+    {
+        // End of file reached, set length to 0
+        pkt->len = 0;
+    }
+}
+
+void close_system(FILE *fp, int sockfd)
+{
+    if (fp != NULL)
+    {
+        fclose(fp);
+    }
+    if (sockfd != -1)
+    {
+        close(sockfd);
+    }
+}
+
+void handle_timeout(int sockfd, const struct sockaddr_in *dest_addr, socklen_t slen, PACKET *pkt, int *state, int ack_no)
+{
+    printf("TIMEOUT AT SENDER FOR SEQ NO. %d\n", ack_no);
+    if (sendto(sockfd, pkt, sizeof(PACKET), 0, (const struct sockaddr *)dest_addr, slen) == -1)
+    {
+        die("sendto()");
+    }
+    printf("RESENT DATA: %s Seq No %d OF SIZE %d Bytes\n", pkt->data, pkt->seq_no, pkt->len);
+}
+
+void handle_ack(int sockfd, struct sockaddr_in *si_other, socklen_t slen, PACKET *rcv_ack, int *state, int ack_no, int next_state)
+{
+    printf("READING FROM SOCKET\n");
+    if (recvfrom(sockfd, rcv_ack, sizeof(PACKET), 0, (struct sockaddr *)si_other, &slen) == -1)
+    {
+        die("recvfrom()");
+    }
+    printf("Received packet: Seq. No = %d, Data = %s\n", rcv_ack->seq_no, rcv_ack->data);
+
+    if (rcv_ack->seq_no == ack_no)
+    {
+        printf("RCVD ACK: for PKT with seq. no. %d\n", rcv_ack->seq_no);
+        *state = next_state;
+    }
+    else if (rcv_ack->seq_no == 1 && *state == 3)
+    {
+        printf("RCVD ACK: for PKT with seq. no. %d\n", rcv_ack->seq_no);
+        *state = 0;
+    }
+}
+
 void transmit_packet(int sockfd, const struct sockaddr_in *dest_addr, PACKET *pkt)
 {
     sendto(sockfd, pkt, sizeof(PACKET), 0, (const struct sockaddr *)dest_addr, sizeof(struct sockaddr_in));
     printf("Transmitted Packet with Sequence No. %d\n", pkt->seq_no);
 }
 
-
 int main()
 {
     // DEFINE PACKET
-    PACKET pkt;
-    PACKET rcv_ack;
+    PACKET pkt, rcv_ack;
 
     struct sockaddr_in si_other;
+<<<<<<< HEAD
     int s, slen = sizeof(si_other);
 >>>>>>> aed9db2 (Initial practice commit)
+=======
+    int s;
+>>>>>>> e3bd83d (Try)
 
     if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
@@ -172,6 +250,7 @@ int main()
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // INITIAL STATE
     int state = 0, retval = 0, ack_no = 0, next_state = 1, slen = sizeof(si_other);
 
@@ -196,20 +275,38 @@ int main()
     // INITIAL STATE
     int state = 0;
 >>>>>>> aed9db2 (Initial practice commit)
+=======
+    // INITIAL STATE
+    int state = 0, retval = 0, ack_no = 0, next_state = 1, slen = sizeof(si_other);
+
+    // TIMER
+    fd_set rfds;
+    struct timeval tv;
+
+    FD_ZERO(&rfds);
+    FD_SET(s, &rfds);
+
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+>>>>>>> e3bd83d (Try)
 
     while (1)
     {
 
         printf("CURRENT STATE: %d\n", state);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         FD_ZERO(&rfds);
         FD_SET(s, &rfds);
 >>>>>>> aed9db2 (Initial practice commit)
+=======
+>>>>>>> e3bd83d (Try)
 
         switch (state)
         {
 
+<<<<<<< HEAD
 <<<<<<< HEAD
         case 2:
         case 0:
@@ -218,10 +315,14 @@ int main()
             {
                 close_system(fp, s);
 =======
+=======
+        case 2:
+>>>>>>> e3bd83d (Try)
         case 0:
-            // READ FROM FILE
-            if (fgets(pkt.data, MAX_DATA_SIZE, fp) != NULL)
+            read_packet(fp, &pkt);
+            if (pkt.len == 0)
             {
+<<<<<<< HEAD
                 // Remove newline character if it exists
                 int length = strlen(pkt.data);
                 if (pkt.data[length - 1] == '\n')
@@ -257,12 +358,16 @@ int main()
                 close(s);
                 // EXIT PROGRAM
 >>>>>>> aed9db2 (Initial practice commit)
+=======
+                close_system(fp, s);
+>>>>>>> e3bd83d (Try)
                 exit(0);
             }
 
             printf("DATA READ: %s of size %d Bytes\n", pkt.data, pkt.len);
 
             // SET SEQ. NO.
+<<<<<<< HEAD
 <<<<<<< HEAD
             pkt.seq_no = state / 2;
 
@@ -297,34 +402,39 @@ int main()
 
 =======
             pkt.seq_no = 0;
+=======
+            pkt.seq_no = state / 2;
+>>>>>>> e3bd83d (Try)
 
             // SEND THE PACKET
-            if (sendto(s, &pkt, sizeof(pkt), 0, (struct sockaddr *)&si_other, slen) == -1)
-            {
-                die("sendto()");
-            }
-
-            printf("SENT DATA with Seq.No 0\n");
+            transmit_packet(s, &si_other, &pkt);
 
             // CHANGE STATE
-            state = 1;
-
-            // START TIMER
-            timer.tv_sec = 5;
-            timer.tv_usec = 0;
+            state += 1;
 
             break;
 
+        case 3:
         case 1:
-            printf("WAITING ON SELECT FOR ACK 0\n");
 
-            FD_ZERO(&rfds);
-            FD_SET(s, &rfds);
+            tv.tv_sec = 5;
+            tv.tv_usec = 0;
 
-            retval = select(s + 1, &rfds, NULL, NULL, &timer);
+            ack_no = (state - 1) / 2;
+            next_state = (state + 1) % 4;
+
+            printf("TIMEOUT VAL: %d\n", tv.tv_sec);
+            printf("WAITING ON SELECT FOR ACK %d\n", ack_no);
+
+            // CHECK SOCKET AND TIMEOUT
+            retval = select(s + 1, &rfds, NULL, NULL, &tv);
 
             printf("RETVAL FROM SELECT FOR 0: %d\n", retval);
+<<<<<<< HEAD
 >>>>>>> aed9db2 (Initial practice commit)
+=======
+
+>>>>>>> e3bd83d (Try)
             // ERROR ON SELECT
             if (retval == -1)
             {
@@ -335,6 +445,7 @@ int main()
             // NON-ZERO: READY TO BE READ
             else if (retval)
             {
+<<<<<<< HEAD
 <<<<<<< HEAD
                 handle_ack(s, &si_other, slen, &rcv_ack, &state, ack_no, next_state);
 =======
@@ -358,11 +469,15 @@ int main()
                     timer.tv_usec = 0;
                 }
 >>>>>>> aed9db2 (Initial practice commit)
+=======
+                handle_ack(s, &si_other, slen, &rcv_ack, &state, ack_no, next_state);
+>>>>>>> e3bd83d (Try)
             }
 
             // TIMEOUT OCCURED! [RETVAL = 0]
             else
             {
+<<<<<<< HEAD
 <<<<<<< HEAD
                 handle_timeout(s, &si_other, slen, &pkt, &state, ack_no);
 =======
@@ -479,6 +594,9 @@ int main()
                 timer.tv_sec = 5;
                 timer.tv_usec = 0;
 >>>>>>> aed9db2 (Initial practice commit)
+=======
+                handle_timeout(s, &si_other, slen, &pkt, &state, ack_no);
+>>>>>>> e3bd83d (Try)
             }
             break;
         }

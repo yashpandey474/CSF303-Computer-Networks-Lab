@@ -15,7 +15,7 @@
 #define R1_PORT 5001
 #define R2_PORT 5002
 #define PDR 0.1
-#define WINDOW_SIZE BUFFER_SIZE/PACKET_SIZE
+#define WINDOW_SIZE 5
 #define RETRANSMISSION_TIME 2
 #define MAX_SEQ_NO 1000
 /*

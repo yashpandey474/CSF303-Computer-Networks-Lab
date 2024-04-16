@@ -5,7 +5,7 @@
 #include <string.h>
 #include <unistd.h> //CLOSE
 #define BUFSIZE 32
-#define SERVER_PORT_NO 12346
+#define SERVER_PORT_NO 12345
 
 int main()
 {
@@ -38,15 +38,21 @@ int main()
 
     // SEND DATA
     printf("ENTER NUMBER: \n");
-    int num;
-    scanf("%d", &num);
-    char numStr[20];
+    double num;
 
+    //TAKE INPUT
+    scanf("%lf", &num);
+
+
+    char numStr[20];
     for (int i = 0; i < 20; i ++ ){
         numStr[i] = '\0';
     }
-        sprintf(numStr, "%d", num);
 
+    //COPY INTO STRING
+    sprintf(numStr, "%lf", num);
+
+    //SEND MESSAGE
     int bytesSent = send(sock, numStr, strlen(numStr), 0);
 
     if (bytesSent != strlen(numStr))
@@ -68,7 +74,7 @@ int main()
     }
 
     recvBuffer[bytesRecvd] = '\0';
-    printf("\n%s\n", recvBuffer);
+    printf("NEXT HIGHER INT: %s\n", recvBuffer);
     close(sock);
     exit(0);
 }

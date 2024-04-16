@@ -123,7 +123,7 @@ int main(){
         die("fopen()");
     }
 
-    printf("FILE OPENED");
+    printf("FILE OPENED\n");
 
     //TAKE INPUT TO BUFFER
     // inputintobuffer();
@@ -135,7 +135,7 @@ int main(){
 
     while (!feof(fp) || base < currseq)
     {
-        printf("IN LOOP");
+        // printf("IN LOOP");
         // Send new packets if window is not full
         while (currseq < base + WINDOW_SIZE && !feof(fp))
         {
@@ -175,7 +175,7 @@ int main(){
                 }
             }
 
-            printf("SENT PACKET");
+            printf("SENT PACKET WITH SEQUENCE NUMBER : %d\n", currseq);
 
             // STORE PACKET FOR TIMEOUT
             sent_packets[currseq % WINDOW_SIZE] = packet;
@@ -235,7 +235,7 @@ int main(){
                 }
         }
 
-        //NO TIMEOUT -> READY TO RECEIVE PACKETS [FROM MULTIPLE SOCKETS]
+        // //NO TIMEOUT -> READY TO RECEIVE PACKETS [FROM MULTIPLE SOCKETS]
         else if (ready > 0)
         {
             //ACK PACKET
@@ -257,9 +257,6 @@ int main(){
                     acks[ack_packet.seq_no % WINDOW_SIZE] = 1;
                 }
             }
-                
-            
-
             // Slide window  [UNTIL THE FIRST UNACKD PACKET]
             while (acks[base % WINDOW_SIZE] == 1)
             {

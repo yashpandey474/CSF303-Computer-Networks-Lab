@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
+
 #define MAXPENDING 3
 #define BUFFERSIZE 32
 #define SERVER_PORT_NO 12345
@@ -58,15 +60,30 @@ int main()
         }
         printf("Handling Client %s\n", inet_ntoa(clientAddress.sin_addr));
 
+        //RESET MESSAGE
+        for (int i = 0; i < BUFFERSIZE; i ++){
+            msg[i] = '\0';
+        }
+
+        //RECEIVE MESSAGE
         int temp2 = recv(clientSocket, msg, BUFFERSIZE, 0);
+
         if (temp2 < 0)
         {
             printf("problem in temp 2");
             exit(0);
         }
-        printf("%s\n", msg);
-        printf("ENTER MESSAGE FOR CLIENT\n");
-        gets(msg);
+        printf("RECEIVED NUMBER: %s\n", msg);
+        
+
+        //CONVERT TO REAL NUMBER
+        double num = atof(msg);
+
+        //GET NEXT HIGHER INTEGER
+        int nextInt = ceil(num);
+
+        //PUT IN MSG
+        sprintf(msg, "%d", nextInt);
 
         int bytesSent = send(clientSocket, msg, strlen(msg), 0);
         if (bytesSent != strlen(msg))
