@@ -122,6 +122,13 @@ void die(char *s)
     exit(1);
 }
 
+void transmit_packet(int sockfd, const struct sockaddr_in *dest_addr, PACKET *pkt)
+{
+    sendto(sockfd, pkt, sizeof(PACKET), 0, (const struct sockaddr *)dest_addr, sizeof(struct sockaddr_in));
+    printf("Transmitted Packet with Sequence No. %d\n", pkt->seq_no);
+}
+
+
 int main()
 {
     // DEFINE PACKET
@@ -149,10 +156,14 @@ int main()
     // OPEN FILE
     FILE *fp;
 <<<<<<< HEAD
+<<<<<<< HEAD
     fp = fopen("name.txt", "r");
 =======
     fp = fopen("input.txt", "r");
 >>>>>>> aed9db2 (Initial practice commit)
+=======
+    fp = fopen("name.txt", "r");
+>>>>>>> f132a61 (Tryr)
 
     if (fp == NULL)
     {
@@ -178,6 +189,7 @@ int main()
     struct timeval timer;
     timer.tv_sec = 5;
     timer.tv_usec = 0;
+
     int retval;
     fd_set rfds;
 
@@ -218,6 +230,20 @@ int main()
                     length--; // Adjust length if newline was removed
                 }
                 pkt.len = length;
+
+                char *token = strtok(pkt.data, ",");
+                while (token != NULL) {
+                    // Send each token as a UDP packet
+                    sendto(s, token, strlen(token), 0, (const struct sockaddr *)&si_other, sizeof(si_other));
+                    printf("Sent: %s\n", token);
+
+                    // Wait for ACK
+                    char ack;
+                    recvfrom(s, &ack, sizeof(ack), 0, NULL, NULL);
+
+                    // Get next token
+                    token = strtok(NULL, ",");
+                }
 
                 printf("Read data: %s, Length: %d\n", pkt.data, pkt.len); // Debug statement
             }
