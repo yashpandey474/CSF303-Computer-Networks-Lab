@@ -8,29 +8,18 @@
 
 #define BUFLEN 512
 #define PORT 8886
+#define PDR 0.1
 // Max length of buffer
 // The port on which to listen for incoming data
-void die(char *s)
-{
-    perror(s);
-    exit(1);
-}
-typedef struct packet1
-{
-    int sq_no;
-} ACK_PKT;
-typedef struct packet2
-{
-    int sq_no;
-    char data[BUFLEN];
-} DATA_PKT;
+
+#include "packet.h"
+
 int main(void)
 {
     struct sockaddr_in si_me, si_other;
     int s, i, slen = sizeof(si_other), recv_len;
     // char buf[BUFLEN];
-    DATA_PKT rcv_pkt;
-    ACK_PKT ack_pkt;
+    DATA_PKT rcv_pkt, ack_pkt;
     // create a UDP socket
     if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
@@ -56,12 +45,12 @@ int main(void)
             printf("Waiting for packet 0 from sender...\n");
             fflush(stdout);
             // try to receive some data, this is a blocking call
-            if ((recv_len = recvfrom(s, &rcv_pkt, BUFLEN, 0, (struct sockaddr *)&si_other, &slen)) == -1)
+            if ((recv_len = recvfrom(s, &rcv_pkt, sizeof(rcv_pkt), 0, (struct sockaddr *)&si_other, &slen)) == -1)
             {
                 die("recvfrom()");
             }
 
-            if (rand() % 5 < 3)
+            if (dropPacket())
             {
                 printf("PACKET WITH SEQ NO %d RANDOMLY LOST\n", rcv_pkt.sq_no);
                 break;
@@ -72,7 +61,8 @@ int main(void)
                 {
                     printf("Packet received with seq. no. %d and Packet content is = %s\n", rcv_pkt.sq_no, rcv_pkt.data);
                     ack_pkt.sq_no = 0;
-                    if (sendto(s, &ack_pkt, recv_len, 0, (struct sockaddr *)&si_other,
+                    ack_pkt.ack_or_data = 0;
+                    if (sendto(s, &ack_pkt, sizeof(ack_pkt), 0, (struct sockaddr *)&si_other,
                                slen) == -1)
                     {
                         die("sendto()");
@@ -87,7 +77,8 @@ int main(void)
                 {
                     // RETRANSMIT OLD ACK
                     ack_pkt.sq_no = 1;
-                    if (sendto(s, &ack_pkt, recv_len, 0, (struct sockaddr *)&si_other,
+                    ack_pkt.ack_or_data = 0;
+                    if (sendto(s, &ack_pkt, sizeof(ack_pkt), 0, (struct sockaddr *)&si_other,
                                slen) == -1)
                     {
                         die("sendto()");
@@ -104,12 +95,12 @@ int main(void)
             printf("Waiting for packet 1 from sender...\n");
             fflush(stdout);
             // try to receive some data, this is a blocking call
-            if ((recv_len = recvfrom(s, &rcv_pkt, BUFLEN, 0, (struct sockaddr *)&si_other, &slen)) == -1)
+            if ((recv_len = recvfrom(s, &rcv_pkt, sizeof(rcv_pkt), 0, (struct sockaddr *)&si_other, &slen)) == -1)
             {
                 die("recvfrom()");
             }
 
-            if (rand() % 5 < 2)
+            if (dropPacket())
             {
                 printf("PACKET WITH SEQ NO %d RANDOMLY LOST\n", rcv_pkt.sq_no);
                 break;
@@ -121,7 +112,7 @@ int main(void)
                 {
                     printf("Packet received with seq. no.= %d and Packet content is= %s\n", rcv_pkt.sq_no, rcv_pkt.data);
                     ack_pkt.sq_no = 1;
-                    if (sendto(s, &ack_pkt, recv_len, 0, (struct sockaddr *)&si_other,
+                    if (sendto(s, &ack_pkt, sizeof(ack_pkt), 0, (struct sockaddr *)&si_other,
                                slen) == -1)
                     {
                         die("sendto()");
@@ -134,7 +125,7 @@ int main(void)
                 {
                     // RETRANSMIT OLD ACK
                     ack_pkt.sq_no = 0;
-                    if (sendto(s, &ack_pkt, recv_len, 0, (struct sockaddr *)&si_other,
+                    if (sendto(s, &ack_pkt, sizeof(ack_pkt), 0, (struct sockaddr *)&si_other,
                                slen) == -1)
                     {
                         die("sendto()");

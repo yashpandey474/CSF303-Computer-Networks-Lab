@@ -59,7 +59,7 @@ int main()
             printf("ERROR WHILE SENDING A MESSAGE\n");
             exit(1);
         }
-        printf("COMMAND SENT\n");
+        printf("COMMAND SENT: %s\n", msg);
 
         // RECEIVE DATA
         char recvBuffer[BUFSIZE];
@@ -79,7 +79,7 @@ int main()
             exit(1);
         }
 
-        printf("RESPONSE RECEIVED%s\n", recvBuffer);
+        printf("RESPONSE RECEIVED: %s\n", recvBuffer);
     }
 
     close(sock);
