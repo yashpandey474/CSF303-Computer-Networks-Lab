@@ -2,11 +2,11 @@
 
 int main()
 {
+    //RANDOM SEED
     srand(time(NULL));
 
     struct sockaddr_in si_me, si_client, si_server;
 
-    int slencl = sizeof(si_client), slense = sizeof(si_server), recv_len;
 
     // CREATE SOCKETS [TO CLIENT AND TO SERVER]
     int *s = (int *)malloc(sizeof(int) * 2);
@@ -35,7 +35,9 @@ int main()
     si_server.sin_port = htons(SERVER_PORT_R2);
     si_server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    // BIND SOCKET TO PORT
+    int slencl = sizeof(si_client), slense = sizeof(si_server), recv_len;
+
+    // BIND SOCKET TO PORT [0 IS FOR CLIENT; 1 FOR SERVER]
     if (bind(s[0], (struct sockaddr *)&si_me, sizeof(si_me)) == -1)
     {
         die("bind()");
@@ -56,7 +58,11 @@ int main()
         // CHECK WHICH SOCKET IS READY TO READ FROM
         maxfd = (s[0] > s[1]) ? s[0] : s[1];
 
+        // printf("%d %d %d\n", s[0], s[1], maxfd);
+
         // NO TIMER ON SELECT
+        printf("WAITING FOR A PACKET\n");
+        fflush(stdout);
         activity = select(maxfd + 1, &readfds, NULL, NULL, NULL);
 
         // CHECK WHICH IS SET
@@ -69,25 +75,27 @@ int main()
                 die("recvfrom()");
             }
 
-            printf("RECIEVED FROM CLIENT");
+            // printf("RECIEVED FROM CLIENT\n");
 
             // SIMULATE PACKET DROP
-            if (dropPacket())
+            if (dropPacket() == 1)
             {
-                printf("PACKET DROPPED");
+                printf("PACKET WITH SEQ NO DROPPED%d\n", rcv_pkt.seq_no);
                 continue;
             }
 
             // INTRODUCE DELAY BEFORE TRANSMITTING TO SERVER
             randomDelay();
 
+
+
             // SEND PACKET TO SERVER
-            if (sendto(s[1], &rcv_pkt, sizeof(rcv_pkt), 0, (struct sockaddr *)&si_server, slense) == -1)
+            if (sendto(s[1], &rcv_pkt, sizeof(rcv_pkt), 0, (struct sockaddr *)&si_server, sizeof(si_server)) == -1)
             {
                 die("sendto()");
             }
 
-            printf("FORWARDED TO SERVER");
+            printf("FORWARDED PACKET %d TO SERVER\n", rcv_pkt.seq_no);
         }
 
         if (FD_ISSET(s[1], &readfds))
@@ -98,14 +106,14 @@ int main()
                 die("recvfrom()");
             }
 
-            printf("RECIEVED ACK FROM SERVER");
+            // printf("RECIEVED ACK FROM SERVER");
 
             // SEND PACKET TO CLIENT
-            if (sendto(s[0], &rcv_pkt, sizeof(rcv_pkt), 0, (struct sockaddr *)&si_client, slencl) == -1)
+            if (sendto(s[0], &rcv_pkt, sizeof(rcv_pkt), 0, (struct sockaddr *)&si_client, sizeof(si_client)) == -1)
             {
                 die("sendto()");
             }
-            printf("FORWARDED ACK TO CLIENT");
+            printf("FORWARDED ACK %d TO CLIENT\n", rcv_pkt.seq_no);
         }
     }
 }

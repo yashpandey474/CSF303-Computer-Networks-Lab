@@ -73,7 +73,6 @@ int main()
         exit(1);
     }
 
-    recvBuffer[bytesRecvd] = '\0';
     printf("NEXT HIGHER INT: %s\n", recvBuffer);
     close(sock);
     exit(0);

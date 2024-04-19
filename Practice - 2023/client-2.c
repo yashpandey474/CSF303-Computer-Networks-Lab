@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include "packet.h"
 
 // FUNCTION FOR CHECKING SOCKET WITH TIMEOUT
@@ -84,33 +83,6 @@ void transmit_packet(int sockfd, const struct sockaddr_in *dest_addr, PACKET *pk
 {
     sendto(sockfd, pkt, sizeof(*pkt), 0, (const struct sockaddr *)dest_addr, sizeof(struct sockaddr_in));
     printf("Transmitted Packet with Sequence No. %d And Data: %s\n", pkt->seq_no, pkt->data);
-=======
-#include <stdio.h>  //printf
-#include <string.h> //memset
-#include <stdlib.h> //exit(0);
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <sys/types.h>
-
-#define PORT 5002
-#define MAX_DATA_SIZE 256
-
-typedef struct
-{
-    int ACK_OR_DATA;
-    char data[MAX_DATA_SIZE];
-    int seq_no;
-    int len;
-} PACKET;
-
-void die(char *s)
-{
-    perror(s);
-    exit(1);
->>>>>>> aed9db2 (Initial practice commit)
 }
 
 int main()

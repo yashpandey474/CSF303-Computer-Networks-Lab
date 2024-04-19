@@ -132,23 +132,30 @@ int main(){
     int base = 0;
     PACKET sent_packets[WINDOW_SIZE];
     int acks[WINDOW_SIZE];
+    PACKET packet;
+
+    //SET ACKS TO 0
+    memset(acks, 0, sizeof(acks));
 
     while (!feof(fp) || base < currseq)
     {
+
+        printf("WINDOW: %d to %d\n", base, base + WINDOW_SIZE);
         // printf("IN LOOP");
         // Send new packets if window is not full
         while (currseq < base + WINDOW_SIZE && !feof(fp))
         {
+            
             //INITIALISE PACKET
-            PACKET packet;
+            memset(packet.payload, 0, sizeof(packet.payload));
+            
             packet.seq_no = currseq;
             packet.ack_or_data = 1;
 
             //READ DATA FROM THE FILE AND STORE IN PACKET
-            packet.size = fread(packet.payload, 1, PACKET_SIZE, fp);
+            packet.size = fread(packet.payload, 1, sizeof(packet.payload), fp);
+            packet.payload[packet.size] = 0;
 
-            //INCREMENT NEXT_SEQ_NUM
-            currseq++;
             // currbyte += PACKET_SIZE;
 
             // CHECK IF FINAL PACKET
@@ -165,6 +172,8 @@ int main(){
                 {
                     die("sendto()");
                 }
+
+                // printf("SENT TO R1\n");
             }
             else
             {
@@ -173,16 +182,26 @@ int main(){
                 {
                     die("sendto()");
                 }
+
+                // printf("SENT TO R2\n");
             }
 
-            printf("SENT PACKET WITH SEQUENCE NUMBER : %d\n", currseq);
+            printf("SENT PACKET WITH SEQUENCE NUMBER %d\n", currseq);
 
             // STORE PACKET FOR TIMEOUT
             sent_packets[currseq % WINDOW_SIZE] = packet;
 
+
+            //SET ACK TO 0
+            acks[currseq % WINDOW_SIZE] = 0;
+
+
+            // INCREMENT NEXT_SEQ_NUM [IN RANGE OF MAX SEQUENCE NUMBER]
+            currseq = incrementSeqNo(currseq);
         }
 
         // Receive acknowledgments [from two sockets]
+        // printf("WAITING FOR ACKS\n");
         fd_set read_fds;
         FD_ZERO(&read_fds);
 
@@ -209,30 +228,41 @@ int main(){
         //TIMEOUT
         if (ready == 0)
         {
-                // Timeout occurred
-                // Resend unacknowledged packets
-                for (int i = base; i < currseq; i++)
+            // printf("TIMEOUT AT SENDER\n");
+            // Timeout occurred
+            // Resend unacknowledged packets
+            for (int i = base; i < currseq; i++)
+            {
+                // SELECTIVE REPEAT -> ONLY UNACKD PACKETS IN CURRENT WINDOW RESENT
+                // printf("%d %d\n", i, acks[i % WINDOW_SIZE]);
+
+                if (!acks[i % WINDOW_SIZE])
                 {
-                    //SELECTIVE REPEAT -> ONLY UNACKD PACKETS IN CURRENT WINDOW RESENT
-                    if (!acks[i % WINDOW_SIZE])
+                    packet = sent_packets[i % WINDOW_SIZE];
+
+                    //CHECK IF THE SEQUENCE NUMBER WAS ODD OR EVEN
+                    if (i % 2 == 1)
                     {
-                        if (currseq % 2 == 1)
+                        if (sendto(s[0], &packet, sizeof(packet), 0, (struct sockaddr *)&si_r1, slen1) == -1)
                         {
-                            if (sendto(s[0], &sent_packets[i % WINDOW_SIZE], sizeof(sent_packets[i % WINDOW_SIZE]), 0, (struct sockaddr *)&si_r1, slen1) == -1)
-                            {
-                                die("sendto()");
-                            }
-                        }
-                        else
-                        {
-                            // TRANSMIT TO R2 FOR EVEN SEQ NO
-                            if (sendto(s[1], &sent_packets[i % WINDOW_SIZE], sizeof(sent_packets[i % WINDOW_SIZE]), 0, (struct sockaddr *)&si_r2, slen2) == -1)
-                            {
-                                die("sendto()");
-                            }
+                            die("sendto()");
                         }
                     }
+                    else
+                    {
+                        // TRANSMIT TO R2 FOR EVEN SEQ NO
+                        if (sendto(s[1], &packet, sizeof(packet), 0, (struct sockaddr *)&si_r2, slen2) == -1)
+                        {
+                            die("sendto()");
+                        }
+                    }
+
+                    printf("RETRANSMITTED PACKET WITH SEQ_NO: %d\n", packet.seq_no);
+
                 }
+                }
+
+                
         }
 
         // //NO TIMEOUT -> READY TO RECEIVE PACKETS [FROM MULTIPLE SOCKETS]
@@ -249,18 +279,25 @@ int main(){
 
                     // Mark packet as acknowledged
                     acks[ack_packet.seq_no % WINDOW_SIZE] = 1;
+
+                    printf("RECEIVED ACK FOR PACKET: %d\n", ack_packet.seq_no);
                 }
                 else if(FD_ISSET(s[i], &read_fds) && i == 0){
                     int n = recvfrom(s[i], &ack_packet, sizeof(ack_packet), 0, (struct sockaddr *)&si_r1, &slen1);
 
                     // Mark packet as acknowledged
                     acks[ack_packet.seq_no % WINDOW_SIZE] = 1;
+
+                    printf("RECEIVED ACK FOR PACKET: %d\n", ack_packet.seq_no);
                 }
             }
             // Slide window  [UNTIL THE FIRST UNACKD PACKET]
             while (acks[base % WINDOW_SIZE] == 1)
             {
-                base++;
+                //ENSURE NO INFINITE LOOP [SET TO 0]
+                acks[base % WINDOW_SIZE] = 0;
+                
+                base = incrementSeqNo(base);
             }
         }
         //ERROR ON SELECT

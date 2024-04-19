@@ -14,7 +14,6 @@ that case, the server has to buffer the packets temporarily to finally construct
 // GLOBAL VARIABLES
 int currseq = 0, lastseq1, lastseq2, lastack1, lastack2;
 PACKET lastunack1, lastunack2;
-PACKET pkt;
 char inputBuffer[BUFFER_SIZE + 1];
 int buffercount = -1;
 FILE *fp;
@@ -146,7 +145,10 @@ int main(){
         switch(state){
             case(0):{
                 //CREATE A PACKET FOR CHANNEL 1
-                
+                pkt = createPacket(0, currseq);
+
+                lastseq1 = currseq;
+                currseq += PACKET_SIZE;
             }
         }
     }

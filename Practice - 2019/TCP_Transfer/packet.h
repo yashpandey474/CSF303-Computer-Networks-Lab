@@ -19,23 +19,17 @@
 #define WINDOW_SIZE 5
 #define RETRANSMISSION_TIME 5
 #define MAX_SEQ_NO 1000
-/*
-The size (number of bytes) of the payload
-b. Whether the packet is the last packet or not?
-c.  You  should  also  decide  how  you  wish  to  implement  and  keep  track  of  sequence
-numbers  and  ACKs,  and  include  the  necessary  information  in  the  header  (or  in  the
-packet structure). The packet structure should be declared in a separate header file
-“packet.h”. Both client and the server programs will make use of this structure.
-
-*/
-typedef struct{
+#define MAXPENDING 2
+typedef struct
+{
+    int seq_no_0;
     int final_packet;
+    int channelid;
     int seq_no;
     int ack_or_data;
     char payload[PACKET_SIZE + 1];
     int size;
 } PACKET;
-
 
 void die(char *s)
 {
@@ -45,17 +39,19 @@ void die(char *s)
 
 int dropPacket()
 {
-    double random_num = (double) rand() / RAND_MAX;
+    double random_num = (double)rand() / RAND_MAX;
 
-    //DROP PACKETS WITH PROBABILTY PDR
-    if (random_num <= PDR){
+    // DROP PACKETS WITH PROBABILTY PDR
+    if (random_num <= PDR)
+    {
         return 1;
     }
 
     return 0;
 }
 
-void randomDelay(){
+void randomDelay()
+{
     struct timespec delay;
     delay.tv_sec = 0;
     delay.tv_nsec = rand() % 2000000;
@@ -64,7 +60,8 @@ void randomDelay(){
     nanosleep(&delay, NULL);
 }
 
-int incrementSeqNo(int seqNo){
+int incrementSeqNo(int seqNo)
+{
     seqNo = (seqNo + 1) % (MAX_SEQ_NO + 1);
     return seqNo;
 }

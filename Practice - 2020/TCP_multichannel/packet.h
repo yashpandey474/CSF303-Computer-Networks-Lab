@@ -1,15 +1,20 @@
-#include <stdio.h>
-#include <sys/socket.h> //SOCKET, CONNECT, SEND, RECV
+#include <stdio.h>  //printf
+#include <string.h> //memset
+#include <stdlib.h> //exit(0);
 #include <arpa/inet.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h> //CLOSE
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <time.h>
 
 #define RETRANSMISSION_TIME 2
 // SAME PORT AT SERVER AND DIFFERENT SOCKETS AT CLIENT => DIFFERENT PORTS AT CLIENT
 #define SERVER_PORT 5001
 #define PACKET_SIZE 100
 #define BUFFER_SIZE 1000
+#define MAX_PENDING 2
 // STRUCTURE FOR PACKET
 
 /*

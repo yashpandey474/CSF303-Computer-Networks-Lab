@@ -1,7 +1,6 @@
 #include "packet.h"
 
-int main()
-{
+int main(){
     int serverSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (serverSocket < 0)
     {
@@ -13,7 +12,7 @@ int main()
     struct sockaddr_in serverAddress, clientAddress;
     memset(&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(SERVER_PORT);
+    serverAddress.sin_port = htons(SERVER_PORT_R1);
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     printf("SERVER ADDRESS ASSIGNED\n");
 
@@ -26,7 +25,7 @@ int main()
     }
 
     printf("Binding successful\n");
-    int temp1 = listen(serverSocket, MAX_PENDING);
+    int temp1 = listen(serverSocket, MAXPENDING);
     if (temp1 < 0)
     {
         printf("Error in listen");
@@ -36,11 +35,7 @@ int main()
 
     int clientLength = sizeof(clientAddress);
 
-
-    //STORE SOCKETS OF TWO CHANNELS
-    int *s = (int *)malloc(sizeof(int) * 2);
-    s[0]= accept(serverSocket, (struct sockaddr *)&clientAddress, &clientLength);
-    s[1] = accept(serverSocket, (struct sockaddr *)&clientAddress, &clientLength);
+    int clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddress, &clientLength);
 
     FILE *fp = fopen("output.txt", "w");
 
@@ -63,9 +58,8 @@ int main()
 
         // printf("RECEIVED PKT WITH SEQ NO %d\n", pkt->seq_no);
 
-        // RANDOM PACKET DROP
-        if (dropPacket())
-        {
+        //RANDOM PACKET DROP
+        if(dropPacket()){
             printf("DROPPED PKT WITH SEQ NO: %d\n", pkt->seq_no);
             continue;
         }
@@ -74,12 +68,12 @@ int main()
         {
             nextSeq += pkt->size;
 
-            // WRITE CONTENT TO FILE
+            //WRITE CONTENT TO FILE
             fputs(pkt->payload, fp);
             fflush(fp);
         }
 
-        // SEND AN ACK
+        //SEND AN ACK
         ack_pkt->seq_no = pkt->seq_no;
 
         int bytesSent = send(clientSocket, ack_pkt, sizeof(*ack_pkt), 0);
