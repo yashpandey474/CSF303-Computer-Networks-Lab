@@ -62,7 +62,7 @@ int main(){
             printf ("problem in temp 2");
             exit (0);
         }
-        printf ("%s\n", msg);
+        printf ("RECEIVED MESSAGE: %s\n", msg);
         printf ("ENTER MESSAGE FOR CLIENT\n");
         gets (msg);
         

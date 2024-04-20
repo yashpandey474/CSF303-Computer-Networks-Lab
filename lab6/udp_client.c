@@ -1,34 +1,10 @@
 /*
 Simple udp client with stop and wait functionality
 */
-#include <stdio.h>  //printf
-#include <string.h> //memset
-#include <stdlib.h> //exit(0);
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <sys/types.h>
 
-#define BUFLEN 512
-#define PORT 8886
 // Max length of buffer
 // The port on which to send data
-typedef struct packet1
-{
-    int sq_no;
-} ACK_PKT;
-typedef struct packet2
-{
-    int sq_no;
-    char data[BUFLEN];
-} DATA_PKT;
-void die(char *s)
-{
-    perror(s);
-    exit(1);
-}
+#include "packet.h"
 int main(void)
 {
     struct sockaddr_in si_other;
@@ -69,16 +45,15 @@ int main(void)
             printf("INPUT MESSAGE: %s\n", send_pkt.data);
 
             send_pkt.sq_no = 0;
+
+            send_pkt.ack_or_data = 1;
             if (sendto(s, &send_pkt, sizeof(send_pkt), 0, (struct sockaddr *)&si_other, slen) == -1)
             {
                 die("sendto()");
             }
             state = 1;
 
-            // START TIMER
-            timer.tv_sec = 5;
-            timer.tv_usec = 0;
-
+        
             break;
 
         case 1:
@@ -86,6 +61,11 @@ int main(void)
 
             FD_ZERO(&rfds);
             FD_SET(s, &rfds);
+
+            // START TIMER
+            timer.tv_sec = 5;
+            timer.tv_usec = 0;
+
 
             retval = select(s + 1, &rfds, NULL, NULL, &timer);
 
@@ -107,7 +87,8 @@ int main(void)
                     die("recvfrom()");
                 }
 
-                if (rand() % 5 < 2)
+                // THIS SIMULATES ACK LOSS
+                if (dropPacket())
                 {
                     printf("PACKET %d RANDOMLY LOST\n", rcv_ack.sq_no);
                     break;
@@ -119,11 +100,6 @@ int main(void)
                     {
                         printf("Received ack seq. no. %d\n", rcv_ack.sq_no);
                         state = 2;
-
-                        // RESTART TIMER
-                        timer.tv_sec = 5;
-                        timer.tv_usec = 0;
-
                         break;
                     }
 
@@ -169,6 +145,13 @@ int main(void)
             break;
 
         case 3:
+            FD_ZERO(&rfds);
+            FD_SET(s, &rfds);
+
+            // START TIMER
+            timer.tv_sec = 5;
+            timer.tv_usec = 0;
+
 
             printf("WAITING ON SELECT FOR ACK 1\n");
             retval = select(s + 1, &rfds, NULL, NULL, &timer);
@@ -188,7 +171,7 @@ int main(void)
                     die("recvfrom()");
                 }
 
-                if (rand() % 5 < 2)
+                if (dropPacket())
                 {
                     printf("PACKET RANDOMLY LOST");
                     break;
@@ -222,10 +205,6 @@ int main(void)
                 {
                     die("sendto()");
                 }
-
-                // RESET TIMER
-                timer.tv_sec = 5;
-                timer.tv_usec = 0;
 
                 break;
             }
