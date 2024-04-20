@@ -1,16 +1,20 @@
 #include "packet.h"
 
-
-int main(){
+int main()
+{
     srand(time(NULL));
 
     int sockfd;
     struct sockaddr_in serverAddr, clientAddr;
     int slen = sizeof(clientAddr);
 
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1){
+    if ((sockfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
+    {
         die("socket()");
     }
+
+
+
 
     memset((char *)&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
@@ -19,7 +23,8 @@ int main(){
 
     slen = sizeof(serverAddr);
 
-    if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1){
+    if (bind(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
+    {
         die("bind()");
     }
 
@@ -30,37 +35,37 @@ int main(){
     snd_pkt->seqNo = 0;
     snd_pkt->isAck = 1;
 
-    while (1){
-        if (recvfrom(sockfd, pkt, sizeof(*pkt), 0, (struct sockaddr *)&clientAddr, &slen) == -1){
+    //ACCEPT A SINGLE CONNECTION BEFORE STARTING WRITING
+    if (listen(sockfd, 1) == -1){
+        die("listen()");
+    }
+
+    int clientSockfd = accept(sockfd, (struct sockaddr *)&clientAddr, &slen);
+
+    while (1)
+    {
+        if (recv(clientSockfd, pkt, sizeof(*pkt), 0) == -1)
+        {
             die("recvfrom()");
         }
 
-        //CHECK IF ACK TO FINACK
-
-        //RANDOM DROP
-        if (dropPacket()){
+        // RANDOM DROP
+        if (dropPacket())
+        {
             printf("DROPPED PKT WITH SEQ NO: %d\n", pkt->seqNo);
             continue;
         }
 
-        if (pkt -> seqNo == expectedSeqNo){
-            
-            if(pkt->isAck == 1 && pkt->finalPacket == 1){
-                //ACK TO FIN ACK RECEIVED
-                break;
-            }
-
-            
+        if (pkt->seqNo == expectedSeqNo)
+        {
             fputs(pkt->payload, fp);
             fflush(fp);
             snd_pkt->seqNo = expectedSeqNo;
             expectedSeqNo += 1;
-            snd_pkt->finalPacket = pkt->finalPacket;
-
-        
         }
 
-        if(sendto(sockfd, snd_pkt, sizeof(*snd_pkt), 0, (struct sockaddr *)&clientAddr, sizeof(clientAddr)) == -1){
+        if (send(clientSockfd, snd_pkt, sizeof(*snd_pkt), 0) == -1)
+        {
             die("sendto()");
         }
         printf("SENT ACK WITH SEQ NO: %d FOR PKT WITH SEQ NO: %d %d\n", snd_pkt->seqNo, pkt->seqNo, pkt->finalPacket);
