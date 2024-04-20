@@ -18,6 +18,7 @@ PACKET *createPacket()
 
     for (i = currbyte; i < currbyte + PACKET_SIZE; i++)
     {
+        
         pkt->payload[i - currbyte] = buf[i];
     }
 
